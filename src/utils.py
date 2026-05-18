@@ -1,3 +1,20 @@
+# =============================================================================
+# Project : Pix2Pix Image-to-Image Translation — MoNuSeg Dataset
+# Course  : Computer Vision II · Master in Artificial Intelligence
+# School  : Universidade de Santiago de Compostela (USC)
+# Authors : Javier Crego Fraguela · Raúl Trillo Martínez
+# Year    : 2025–2026
+# File    : src/utils.py — Metric computation (PSNR, SSIM, MAE) and matplotlib visualisation helpers.
+#
+# Disclaimer
+# ----------
+# This project was developed through a combination of individual authorship and
+# Generative AI assistance (GitHub Copilot / Gemini / Claude). All AI-generated
+# code and content was thoroughly reviewed, understood, and validated by the
+# authors, who take full academic responsibility for every theoretical choice
+# and implementation decision present in this work.
+# =============================================================================
+
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr

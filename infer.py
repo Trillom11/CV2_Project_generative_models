@@ -1,15 +1,19 @@
-"""
-infer.py — Pix2Pix MoNuSeg Demo Script
-=======================================
-Usage:
-    python3 infer.py <image_path> [--weights <path>] [--model baseline|attention]
-
-Example:
-    python3 infer.py samples/sample_01_monuseg.png
-
-The generated image is saved automatically to outputs/ and a side-by-side
-matplotlib figure (Label Map | Generated | Ground Truth) is displayed.
-"""
+# =============================================================================
+# Project : Pix2Pix Image-to-Image Translation — MoNuSeg Dataset
+# Course  : Computer Vision II · Master in Artificial Intelligence
+# School  : Universidade de Santiago de Compostela (USC)
+# Authors : Javier Crego Fraguela · Raúl Trillo Martínez
+# Year    : 2025–2026
+# File    : infer.py — Standalone demo script: runs inference from the terminal with a single image path argument.
+#
+# Disclaimer
+# ----------
+# This project was developed through a combination of individual authorship and
+# Generative AI assistance (GitHub Copilot / Gemini / Claude). All AI-generated
+# code and content was thoroughly reviewed, understood, and validated by the
+# authors, who take full academic responsibility for every theoretical choice
+# and implementation decision present in this work.
+# =============================================================================
 
 import argparse
 import os

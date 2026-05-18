@@ -1,3 +1,20 @@
+# =============================================================================
+# Project : Pix2Pix Image-to-Image Translation — MoNuSeg Dataset
+# Course  : Computer Vision II · Master in Artificial Intelligence
+# School  : Universidade de Santiago de Compostela (USC)
+# Authors : Javier Crego Fraguela · Raúl Trillo Martínez
+# Year    : 2025–2026
+# File    : src/experiments.py — Bayesian hyperparameter search using Optuna (TPE sampler).
+#
+# Disclaimer
+# ----------
+# This project was developed through a combination of individual authorship and
+# Generative AI assistance (GitHub Copilot / Gemini / Claude). All AI-generated
+# code and content was thoroughly reviewed, understood, and validated by the
+# authors, who take full academic responsibility for every theoretical choice
+# and implementation decision present in this work.
+# =============================================================================
+
 import torch
 import optuna
 from src.data import get_dataloaders
