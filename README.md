@@ -11,8 +11,8 @@
 
 This project implements a **Pix2Pix** Generative Adversarial Network that translates semantic label maps of cell nuclei into realistic histology tissue images. Two architectures are provided:
 
-- **Baseline** — Standard U-Net Generator + PatchGAN Discriminator  
-- **Improved** — Attention U-Net Generator + Spectral Normalization Discriminator, tuned with Optuna
+- **Baseline** — Standard U-Net Generator + PatchGAN Discriminator
+- **Improved** — Attention U-Net Generator + Spectral Normalization Discriminator, tuned with Optuna (includes Dropout regularisation, Early Stopping, and ReduceLROnPlateau scheduling)
 
 ---
 
@@ -32,8 +32,11 @@ Project/
 │   ├── utils.py              # Metrics (PSNR, SSIM, MAE) and visualisation
 │   └── plots.py              # Model comparison charts
 │
-├── checkpoints/              # Saved model weights after training
+├── checkpoints/              # Saved model weights and Optuna cache
 │   ├── baseline_G.pth        # Baseline generator weights
+│   ├── optuna_study.db       # SQLite database with all Optuna trials
+│   ├── optuna_results.pkl    # Legacy cache for Optuna
+│   ├── optuna_best_trial_G.pth # Best generator from Optuna (used for warm-starting)
 │   └── best_model_G.pth      # Best improved generator weights
 │
 ├── samples/                  # Sample input images for the demo
@@ -113,8 +116,8 @@ python3 infer.py samples/sample_01_monuseg.png --weights checkpoints/baseline_G.
 
 Open `main.ipynb` in Jupyter and run the cells from top to bottom. The notebook covers:
 
-1. **Phase 1** — Data loading and EDA  
-2. **Phase 2** — Baseline training (U-Net + PatchGAN)  
-3. **Phase 3** — Quantitative evaluation (PSNR, SSIM, MAE) and loss curves  
-4. **Phase 4** — Improvements: Attention, Spectral Normalization, Optuna search  
+1. **Phase 1** — Data loading and EDA
+2. **Phase 2** — Baseline training (U-Net + PatchGAN)
+3. **Phase 3** — Quantitative evaluation (PSNR, SSIM, MAE) and loss curves
+4. **Phase 4** — Improvements: Attention, Spectral Normalization, Optuna search (with SQLite persistence and Trial Analysis), Early Stopping, and LR Scheduling.
 5. **Phase 5** — Demo: calling `infer.py` on sample images

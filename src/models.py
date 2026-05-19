@@ -20,7 +20,7 @@ import torch.nn as nn
 from torch.nn.utils import spectral_norm
 
 class UNetBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, down=True, use_dropout=False):
+    def __init__(self, in_channels, out_channels, down=True, use_dropout=False, dropout_rate=0.5):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 4, 2, 1, bias=False) if down else nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=False),
@@ -28,7 +28,7 @@ class UNetBlock(nn.Module):
             nn.ReLU(inplace=True) if not down else nn.LeakyReLU(0.2, inplace=True)
         )
         self.use_dropout = use_dropout
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(dropout_rate)
 
     def forward(self, x):
         x = self.conv(x)
@@ -134,17 +134,18 @@ class AttentionBlock(nn.Module):
         return x * psi
 
 class AttentionUNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3):
+    def __init__(self, in_channels=3, out_channels=3, dropout_rate=0.5):
         super().__init__()
         self.down1 = UNetBlock(in_channels, 64, down=True)
         self.down2 = UNetBlock(64, 128, down=True)
         self.down3 = UNetBlock(128, 256, down=True)
         self.down4 = UNetBlock(256, 512, down=True)
         
-        self.up1 = UNetBlock(512, 256, down=False)
+        # Dropout applied to the first decoder blocks (higher-level features benefit most from regularisation)
+        self.up1 = UNetBlock(512, 256, down=False, use_dropout=True, dropout_rate=dropout_rate)
         self.att1 = AttentionBlock(F_g=256, F_l=256, F_int=128)
         
-        self.up2 = UNetBlock(256 * 2, 128, down=False)
+        self.up2 = UNetBlock(256 * 2, 128, down=False, use_dropout=True, dropout_rate=dropout_rate)
         self.att2 = AttentionBlock(F_g=128, F_l=128, F_int=64)
         
         self.up3 = UNetBlock(128 * 2, 64, down=False)

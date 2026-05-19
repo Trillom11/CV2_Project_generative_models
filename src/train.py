@@ -20,7 +20,7 @@ from src.utils import calculate_metrics
 
 import os
 
-def train_model(generator, discriminator, dataloaders, epochs=10, device=None, lr=0.0002, lambda_pixel=100, save_path=None):
+def train_model(generator, discriminator, dataloaders, epochs=10, device=None, lr=0.0002, lambda_pixel=100, save_path=None, early_stopping_patience=None, use_scheduler=True):
     train_loader = dataloaders["train"]
     val_loader = dataloaders["val"]
     if device is None:
@@ -44,10 +44,26 @@ def train_model(generator, discriminator, dataloaders, epochs=10, device=None, l
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
 
+    # ReduceLROnPlateau: halves lr after 4 epochs without MAE improvement.
+    # Only active for the improved model (use_scheduler=True); baseline keeps fixed lr.
+    if use_scheduler:
+        scheduler_G = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer_G, mode='min', factor=0.5, patience=4, min_lr=1e-6
+        )
+        scheduler_D = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer_D, mode='min', factor=0.5, patience=4, min_lr=1e-6
+        )
+
     histories = {
         'g_loss': [], 'd_loss': [], 'val_g_loss': [], 'val_d_loss': [],
         'val_psnr': [], 'val_ssim': [], 'val_mae': []
     }
+
+    # Early stopping state — monitored metric: val_mae (lower = better)
+    best_val_mae      = float('inf')
+    early_stop_counter = 0
+    best_G_state = None
+    best_D_state = None
 
     for epoch in range(epochs):
         generator.train()
@@ -113,7 +129,40 @@ def train_model(generator, discriminator, dataloaders, epochs=10, device=None, l
         print(f"[Epoch {epoch+1}/{epochs}] "
               f"[Train D: {epoch_d_loss:.4f} G: {epoch_g_loss:.4f}] "
               f"[Val D: {histories['val_d_loss'][-1]:.4f} G: {histories['val_g_loss'][-1]:.4f}] "
-              f"[PSNR: {histories['val_psnr'][-1]:.2f} SSIM: {histories['val_ssim'][-1]:.4f}]")
+              f"[PSNR: {histories['val_psnr'][-1]:.2f} SSIM: {histories['val_ssim'][-1]:.4f} MAE: {histories['val_mae'][-1]:.4f}]")
+
+        # --- LR scheduler step (on val_mae) ---
+        if use_scheduler:
+            prev_lr_G = optimizer_G.param_groups[0]['lr']
+            scheduler_G.step(histories['val_mae'][-1])
+            scheduler_D.step(histories['val_mae'][-1])
+            new_lr_G = optimizer_G.param_groups[0]['lr']
+            if new_lr_G < prev_lr_G:
+                print(f"  [Scheduler] LR reduced: {prev_lr_G:.2e} → {new_lr_G:.2e}")
+
+        # --- Early stopping check (monitors val_mae — lower is better) ---
+        if early_stopping_patience is not None:
+            current_mae = histories['val_mae'][-1]
+            if current_mae < best_val_mae:
+                best_val_mae = current_mae
+                early_stop_counter = 0
+                import copy
+                best_G_state = copy.deepcopy(generator.state_dict())
+                best_D_state = copy.deepcopy(discriminator.state_dict())
+                print(f"  [Early Stopping] ★ New best MAE: {best_val_mae:.4f} — weights saved.")
+            else:
+                early_stop_counter += 1
+                print(f"  [Early Stopping] No MAE improvement for {early_stop_counter}/{early_stopping_patience} epoch(s). Best: {best_val_mae:.4f}")
+                if early_stop_counter >= early_stopping_patience:
+                    print(f"  [Early Stopping] Triggered at epoch {epoch+1}. Restoring best weights (MAE={best_val_mae:.4f}).")
+                    generator.load_state_dict(best_G_state)
+                    discriminator.load_state_dict(best_D_state)
+                    break
+
+    # Restore best weights even if we finish all epochs without early stopping
+    if early_stopping_patience is not None and best_G_state is not None:
+        generator.load_state_dict(best_G_state)
+        discriminator.load_state_dict(best_D_state)
 
     if save_path is not None:
         # Save checkpoints
